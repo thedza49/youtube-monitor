@@ -7,3 +7,12 @@ channels:
         - "TCAF"
         - "WAYT"
     summary_focus: "Focus specifically on individual stock picks, identifying if they are bull or bear calls and the specific reasoning behind each call."
+  - handle: "@biggerpockets"
+    channel_id: "UCxDXuLvtjJ9Est8PrG3i2VA"
+    rules:
+      max_age_days: 7
+      keywords:
+        - "Market Update"
+        - "State of the Market"
+        - "Investing"
+    summary_focus: "Focus on real estate market trends, interest rate impacts, and actionable property investment strategies."
