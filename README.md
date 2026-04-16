@@ -1,4 +1,7 @@
-# YouTube Monitor
+## Important Operational Rules
+- **No Mass Summarization:** This tool is strictly for forward-looking monitoring. 
+- **Backlog Handling:** Upon subscribing to a new channel, the `seen_videos.json` must be pre-populated with the channel's current top 50 videos to prevent the system from attempting to summarize historical content.
+- **Safety Valve:** The systemd service is configured to process new releases only. Any manual runs should be restricted to specific video IDs to avoid flooding.
 
 Automatically polls YouTube channels for new videos, fetches transcripts, generates summaries using AI, and delivers them as PDFs via Telegram.
 
