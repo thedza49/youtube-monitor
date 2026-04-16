@@ -1,10 +1,23 @@
 channels:
   - handle: "@TheCompoundNews"
-    name: "The Compound and Friends"
     channel_id: "UCBRpqrzuuqE8TZcWw75JSdw"
     rules:
       max_age_days: 1
       keywords:
         - "TCAF"
         - "WAYT"
-    summary_focus: "Market trends, institutional investing, and macro-economic shifts"
+    summary_focus: "Focus specifically on individual stock picks, identifying if they are bull or bear calls and the specific reasoning behind each call."
+  - handle: "@lennyspodcast"
+    channel_id: "UC6t1O76G0jYXOAoYCm153dA"
+    rules:
+      max_age_days: 7
+      keywords:
+        - ""
+    summary_focus: "Focus specifically on actionable takeaways for Product Managers, highlighting frameworks, career advice, and tactical product growth strategies."
+  - handle: "@thediaryofaceo"
+    channel_id: "UCGq-a57w-aPwyi3pW7XLiHw"
+    rules:
+      max_age_days: 3
+      keywords:
+        - ""
+    summary_focus: "Focus on general themes, life lessons, and business insights. Use the established theme-based bulleted format."
