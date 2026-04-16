@@ -24,7 +24,14 @@ def main():
 
     print("Polling for new videos...")
     new_videos = poller.poll()
-    print(f"Found {len(new_videos)} new videos.")
+    
+    # SAFETY: Limit to maximum 2 videos per run to prevent accidental mass summarization
+    MAX_PER_RUN = 2
+    if len(new_videos) > MAX_PER_RUN:
+        print(f"Warning: Found {len(new_videos)} qualifying videos. Limiting to first {MAX_PER_RUN} to prevent flood.")
+        new_videos = new_videos[:MAX_PER_RUN]
+    
+    print(f"Processing {len(new_videos)} videos.")
 
     for video in new_videos:
         video_id = video['id']
