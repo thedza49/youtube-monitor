@@ -6,3 +6,4 @@ channels:
       keywords:
         - "TCAF"
         - "WAYT"
+    summary_focus: "Focus specifically on individual stock picks, identifying if they are bull or bear calls and the specific reasoning behind each call."
