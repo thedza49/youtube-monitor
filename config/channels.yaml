@@ -16,3 +16,10 @@ channels:
         - "State of the Market"
         - "Investing"
     summary_focus: "Focus on real estate market trends, interest rate impacts, and actionable property investment strategies."
+  - handle: "@allin"
+    channel_id: "UCESLZhusAkFfsNsApnjF_Cg"
+    rules:
+      max_age_days: 3
+      keywords:
+        - "E"
+    summary_focus: "Focus on venture capital trends, macro-economic debate between the besties, and any specific private or public company deep dives."
