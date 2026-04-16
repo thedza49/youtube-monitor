@@ -28,6 +28,10 @@ A native Python monitor for the Raspberry Pi that tracks YouTube channels via RS
 ## Phase 4: Automation (Momo)
 - [ ] **Task 9: systemd Service.** Create and enable `youtube-monitor.service` to run daily.
 
+## Phase 5: Refinement & Customization (Momo)
+- [ ] **Task 10: Themed Summaries.** Refactor `summarizer.py` to use a bullet-heavy, theme-based template (e.g., Macro, AI, Specific Tickers).
+- [ ] **Task 11: Per-Channel Focus.** Update `config/channels.yaml` to include a `summary_focus` field and modify `summarizer.py` to inject this focus into the LLM prompt.
+
 ## Verification (Larry)
 - [ ] Verify RSS polling logic.
 - [ ] Confirm PDF renders correctly on Pi 4.

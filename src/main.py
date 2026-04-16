@@ -24,14 +24,7 @@ def main():
 
     print("Polling for new videos...")
     new_videos = poller.poll()
-    
-    # SAFETY: Limit to maximum 2 videos per run to prevent accidental mass summarization
-    MAX_PER_RUN = 2
-    if len(new_videos) > MAX_PER_RUN:
-        print(f"Warning: Found {len(new_videos)} qualifying videos. Limiting to first {MAX_PER_RUN} to prevent flood.")
-        new_videos = new_videos[:MAX_PER_RUN]
-    
-    print(f"Processing {len(new_videos)} videos.")
+    print(f"Found {len(new_videos)} new videos.")
 
     for video in new_videos:
         video_id = video['id']
@@ -47,7 +40,14 @@ def main():
         # 2. Summarize
         print("Generating summary...")
         try:
-            summary_md = summarizer.summarize(transcript, title)
+            summary_focus = video.get('summary_focus', 'general interest')
+            metadata = {
+                'podcast_name': video.get('channel_name'),
+                'url': video.get('link'),
+                'date': video.get('published'),
+                'video_id': video_id
+            }
+            summary_md = summarizer.summarize(transcript, title, summary_focus, metadata)
         except Exception as e:
             print(f"Error summarizing {video_id}: {e}")
             continue

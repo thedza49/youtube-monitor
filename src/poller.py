@@ -42,15 +42,6 @@ class YouTubePoller:
             feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
             feed = feedparser.parse(feed_url)
             
-            # SAFETY: If this is the FIRST time we are seeing this channel, 
-            # mark all currently available videos as seen so we only process future releases.
-            is_new_channel = not any(v.get('channel_handle') == channel.get('handle') for v in self.seen_videos if isinstance(v, dict))
-            # Fallback for simple string lists
-            if not is_new_channel and all(isinstance(v, str) for v in self.seen_videos):
-                # If we only have IDs, we can't easily attribute to channel, 
-                # but the user already has a seen_videos list.
-                pass 
-
             rules = channel.get('rules', {})
             max_age_days = rules.get('max_age_days', 7)
             keywords = rules.get('keywords', [])
@@ -96,7 +87,9 @@ class YouTubePoller:
                     'title': title,
                     'link': entry.link,
                     'published': published.isoformat(),
-                    'channel_handle': channel.get('handle')
+                    'channel_handle': channel.get('handle'),
+                    'channel_name': channel.get('name', channel.get('handle')),
+                    'summary_focus': channel.get('summary_focus', 'general interest')
                 })
         
         return new_videos
