@@ -1,0 +1,7 @@
+feedparser
+youtube-transcript-api
+pyyaml
+google-generativeai
+weasyprint
+markdown
+python-dotenv

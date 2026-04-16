@@ -1,0 +1,13 @@
+[Unit]
+Description=YouTube Monitor Service
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/daniel/.openclaw/workspace-momo/projects/youtube-monitor
+ExecStart=/home/daniel/.openclaw/workspace-momo/projects/youtube-monitor/venv/bin/python src/main.py
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/daniel/.npm-global/bin
+EnvironmentFile=-/home/daniel/.openclaw/workspace-momo/projects/youtube-monitor/.env
+
+[Install]
+WantedBy=default.target
