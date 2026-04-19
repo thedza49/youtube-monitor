@@ -20,7 +20,7 @@ def main():
     fetcher = TranscriptFetcher()
     summarizer = VideoSummarizer()
     pdf_gen = PDFGenerator()
-    deliverer = TelegramDeliverer(target="telegram:7093940228")
+    deliverer = TelegramDeliverer()
 
     print("Polling for new videos...")
     new_videos = poller.poll()
