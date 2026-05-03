@@ -9,76 +9,54 @@ from delivery import DeliveryManager
 load_dotenv()
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# Initialize Delivery Manager
 delivery = DeliveryManager()
-
-# Security: Only respond to your specific Channel ID
 AUTHORIZED_CHAT_ID = os.getenv("TELEGRAM_CHANNEL_ID")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Specific help menu for the YouTube Summarizer bot."""
-    if str(update.effective_chat.id) != AUTHORIZED_CHAT_ID:
+    current_id = str(update.effective_chat.id)
+    print(f"DEBUG: Received command from ID: {current_id}") # This helps us see why it's silent
+    
+    if current_id != AUTHORIZED_CHAT_ID:
+        print(f"DEBUG: ID {current_id} does not match AUTHORIZED_CHAT_ID {AUTHORIZED_CHAT_ID}")
         return
     
     help_msg = (
         "🤖 **@YTSum49bot | YouTube Summarizer**\n\n"
-        "This bot monitors your configured YouTube channels and posts AI-generated summaries.\n\n"
+        "This bot monitors your configured YouTube channels.\n\n"
         "**Available Commands:**\n"
-        "• `/status` - View your currently monitored YouTube channels\n"
-        "• `/add <url>` - Add a new channel (e.g., `/add https://youtube.com/@TheCompound`)\n"
-        "• `/remove` - Open the interactive menu to delete a channel\n"
-        "• `/fetch` - Manually check for new videos right now"
+        "• `/status` - View your monitored channels\n"
+        "• `/add <url>` - Add a new channel\n"
+        "• `/remove` - Delete a channel\n"
+        "• `/fetch` - Scan for new videos"
     )
     await update.message.reply_text(help_msg, parse_mode="Markdown")
 
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Lists the channels currently being monitored."""
     if str(update.effective_chat.id) != AUTHORIZED_CHAT_ID:
         return
-    
     channels = delivery.get_channels()
-    if not channels:
-        await update.message.reply_text("Your monitor list is currently empty.")
-        return
-    
-    msg = "📺 **Currently Monitoring:**\n\n"
-    for c in channels:
-        msg += f"• {c['name']} ({c['url']})\n"
-    
+    msg = "📺 **Currently Monitoring:**\n\n" + "\n".join([f"• {c['name']} ({c['url']})" for c in channels]) if channels else "Your list is empty."
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 async def add_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Adds a new YouTube channel to the YAML config."""
     if str(update.effective_chat.id) != AUTHORIZED_CHAT_ID:
         return
-
     if not context.args:
-        await update.message.reply_text("❌ Please provide a URL.\nExample: `/add https://youtube.com/@TheCompound`", parse_mode="Markdown")
+        await update.message.reply_text("❌ Use: `/add <url>`")
         return
-
     url = context.args[0]
-    try:
-        name = delivery.add_new_channel(url)
-        await update.message.reply_text(f"✅ Added **{name}** to the monitor list.", parse_mode="Markdown")
-    except Exception as e:
-        await update.message.reply_text(f"⚠️ Error: {str(e)}")
+    name = delivery.add_new_channel(url)
+    await update.message.reply_text(f"✅ Added **{name}**")
 
 async def remove_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Shows an interactive menu to delete channels."""
     if str(update.effective_chat.id) != AUTHORIZED_CHAT_ID:
         return
-
     reply_markup = await delivery.get_remove_menu()
-    if reply_markup:
-        await update.message.reply_text("Select a channel to remove:", reply_markup=reply_markup)
-    else:
-        await update.message.reply_text("No channels found to remove.")
+    await update.message.reply_text("Select a channel to remove:", reply_markup=reply_markup) if reply_markup else await update.message.reply_text("No channels found.")
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Processes the 'Remove' button clicks."""
     query = update.callback_query
     await query.answer()
-    
     if query.data.startswith("remove_"):
         channel_name = query.data.replace("remove_", "")
         if delivery.remove_channel(channel_name):
@@ -87,14 +65,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == '__main__':
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     application = ApplicationBuilder().token(token).build()
-    
-    # Registering all commands
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("start", help_command)) # Start shows help too
+    application.add_handler(CommandHandler("start", help_command))
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("add", add_command))
     application.add_handler(CommandHandler("remove", remove_command))
     application.add_handler(CallbackQueryHandler(handle_callback))
     
-    print("Bot is listening for / commands...")
+    print(f"Bot started. Authorized ID is: {AUTHORIZED_CHAT_ID}")
     application.run_polling()
