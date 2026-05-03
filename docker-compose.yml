@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  yt-monitor:
+    build: .
+    container_name: yt_monitor_bot
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./config:/app/config
+      - ./processed_videos.txt:/app/processed_videos.txt
