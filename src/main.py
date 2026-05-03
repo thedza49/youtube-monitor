@@ -1,55 +1,91 @@
 import os
 import logging
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
-from delivery import DeliveryManager
 from dotenv import load_dotenv
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
+from delivery import DeliveryManager
 
-# Load environment variables (Bot Token, etc.)
+# Setup
 load_dotenv()
-
-# Setup logging so we can see what's happening in the terminal
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
+# Initialize Delivery Manager
 delivery = DeliveryManager()
 
+# Security: Only respond to your specific Channel ID
+AUTHORIZED_CHAT_ID = os.getenv("TELEGRAM_CHANNEL_ID")
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Sends a welcome message."""
-    await update.message.reply_text("YouTube Monitor Active. Use /fetch to scan or /remove to manage channels.")
+    """Basic greeting to ensure bot is alive."""
+    if str(update.effective_chat.id) != AUTHORIZED_CHAT_ID:
+        return
+    await update.message.reply_text("YouTube Monitor Bot is active! Use /status to see your list.")
+
+async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Lists the channels currently being monitored."""
+    if str(update.effective_chat.id) != AUTHORIZED_CHAT_ID:
+        return
+    
+    channels = delivery.get_channels()
+    if not channels:
+        await update.message.reply_text("Your monitor list is currently empty.")
+        return
+    
+    msg = "📺 **Currently Monitoring:**\n\n"
+    for c in channels:
+        msg += f"• {c['name']} ({c['url']})\n"
+    
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
+async def add_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Adds a new YouTube channel to the YAML config."""
+    if str(update.effective_chat.id) != AUTHORIZED_CHAT_ID:
+        return
+
+    if not context.args:
+        await update.message.reply_text("❌ Please provide a URL.\nExample: `/add https://youtube.com/@TheCompound`", parse_mode="Markdown")
+        return
+
+    url = context.args[0]
+    try:
+        name = delivery.add_new_channel(url)
+        await update.message.reply_text(f"✅ Added **{name}** to the monitor list.", parse_mode="Markdown")
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ Error: {str(e)}")
 
 async def remove_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Triggered by /remove - shows the button menu."""
+    """Shows an interactive menu to delete channels."""
+    if str(update.effective_chat.id) != AUTHORIZED_CHAT_ID:
+        return
+
     reply_markup = await delivery.get_remove_menu()
     if reply_markup:
         await update.message.reply_text("Select a channel to remove:", reply_markup=reply_markup)
     else:
-        await update.message.reply_text("No channels found in your list.")
+        await update.message.reply_text("No channels found to remove.")
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Triggered when you tap a button."""
+    """Processes the 'Remove' button clicks."""
     query = update.callback_query
-    await query.answer() # Stops the loading spinner on Telegram
+    await query.answer()
     
-    # Check if the button click starts with 'remove_'
     if query.data.startswith("remove_"):
-        index = int(query.data.split("_")[1])
-        removed_name = delivery.remove_channel_by_index(index)
-        await query.edit_message_text(text=f"Successfully removed: {removed_name}")
+        channel_name = query.data.replace("remove_", "")
+        if delivery.remove_channel(channel_name):
+            await query.edit_message_text(text=f"🗑 Removed: {channel_name}")
+        else:
+            await query.edit_message_text(text="❌ Failed to remove channel.")
 
 if __name__ == '__main__':
     token = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not token:
-        print("Error: TELEGRAM_BOT_TOKEN not found in .env file.")
-    else:
-        # Build the application
-        application = ApplicationBuilder().token(token).build()
-        
-        # Register the commands
-        application.add_handler(CommandHandler("start", start))
-        application.add_handler(CommandHandler("remove", remove_command))
-        
-        # Register the button click handler
-        application.add_handler(CallbackQueryHandler(handle_callback))
-        
-        print("Bot is listening for commands...")
-        application.run_polling()
+    application = ApplicationBuilder().token(token).build()
+    
+    # Registering all commands
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("status", status_command))
+    application.add_handler(CommandHandler("add", add_command))
+    application.add_handler(CommandHandler("remove", remove_command))
+    application.add_handler(CallbackQueryHandler(handle_callback))
+    
+    print("Bot is listening for commands...")
+    application.run_polling()
