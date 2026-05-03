@@ -10,9 +10,14 @@ class DeliveryManager:
         """Loads channels from the YAML file."""
         if not os.path.exists(self.channels_file):
             return []
-        with open(self.channels_file, 'r') as f:
-            data = yaml.safe_load(f)
-            return data.get('channels', [])
+        try:
+            with open(self.channels_file, 'r') as f:
+                data = yaml.safe_load(f)
+                if not data or 'channels' not in data:
+                    return []
+                return data.get('channels', [])
+        except Exception:
+            return []
 
     def add_new_channel(self, url):
         """Appends a new channel to the YAML file."""
@@ -34,10 +39,11 @@ class DeliveryManager:
             
         return clean_name
 
-    def remove_channel(self, name):
-        """Deletes a channel by name."""
+    def remove_channel(self, name_or_url):
+        """Deletes a channel by matching name or url."""
         channels = self.get_channels()
-        updated_channels = [c for c in channels if c['name'] != name]
+        # Filter out the channel that matches either the name or the url
+        updated_channels = [c for c in channels if c.get('name') != name_or_url and c.get('url') != name_or_url]
         
         if len(channels) == len(updated_channels):
             return False
@@ -54,6 +60,10 @@ class DeliveryManager:
             
         keyboard = []
         for c in channels:
-            keyboard.append([InlineKeyboardButton(f"❌ {c['name']}", callback_data=f"remove_{c['name']}")])
+            # SAFETY: Use the name if it exists, otherwise use the URL
+            display_name = c.get('name', c.get('url', 'Unknown Channel'))
+            callback_val = c.get('name', c.get('url', 'unknown'))
+            
+            keyboard.append([InlineKeyboardButton(f"❌ {display_name}", callback_data=f"remove_{callback_val}")])
             
         return InlineKeyboardMarkup(keyboard)
