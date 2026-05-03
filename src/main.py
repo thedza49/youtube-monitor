@@ -15,11 +15,21 @@ delivery = DeliveryManager()
 # Security: Only respond to your specific Channel ID
 AUTHORIZED_CHAT_ID = os.getenv("TELEGRAM_CHANNEL_ID")
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Basic greeting to ensure bot is alive."""
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Specific help menu for the YouTube Summarizer bot."""
     if str(update.effective_chat.id) != AUTHORIZED_CHAT_ID:
         return
-    await update.message.reply_text("YouTube Monitor Bot is active! Use /status to see your list.")
+    
+    help_msg = (
+        "🤖 **@YTSum49bot | YouTube Summarizer**\n\n"
+        "This bot monitors your configured YouTube channels and posts AI-generated summaries.\n\n"
+        "**Available Commands:**\n"
+        "• `/status` - View your currently monitored YouTube channels\n"
+        "• `/add <url>` - Add a new channel (e.g., `/add https://youtube.com/@TheCompound`)\n"
+        "• `/remove` - Open the interactive menu to delete a channel\n"
+        "• `/fetch` - Manually check for new videos right now"
+    )
+    await update.message.reply_text(help_msg, parse_mode="Markdown")
 
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Lists the channels currently being monitored."""
@@ -73,19 +83,18 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         channel_name = query.data.replace("remove_", "")
         if delivery.remove_channel(channel_name):
             await query.edit_message_text(text=f"🗑 Removed: {channel_name}")
-        else:
-            await query.edit_message_text(text="❌ Failed to remove channel.")
 
 if __name__ == '__main__':
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     application = ApplicationBuilder().token(token).build()
     
     # Registering all commands
-    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("start", help_command)) # Start shows help too
     application.add_handler(CommandHandler("status", status_command))
     application.add_handler(CommandHandler("add", add_command))
     application.add_handler(CommandHandler("remove", remove_command))
     application.add_handler(CallbackQueryHandler(handle_callback))
     
-    print("Bot is listening for commands...")
+    print("Bot is listening for / commands...")
     application.run_polling()
