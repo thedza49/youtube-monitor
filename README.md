@@ -1,25 +1,27 @@
-## Important Operational Rules
-- **No Mass Summarization:** This tool is strictly for forward-looking monitoring. 
-- **Backlog Handling:** Upon subscribing to a new channel, the `seen_videos.json` must be pre-populated with the channel's current top 50 videos to prevent the system from attempting to summarize historical content.
-- **Safety Valve:** The systemd service is configured to process new releases only. Any manual runs should be restricted to specific video IDs to avoid flooding.
+# YouTube Monitor Bot
 
-Automatically polls YouTube channels for new videos, fetches transcripts, generates summaries using AI, and delivers them as PDFs via Telegram.
+A dedicated Telegram bot that monitors YouTube channels, fetches new videos, and posts AI-generated summaries to a specific Telegram channel.
 
-## Setup
+## 🛠 Features
+- **Dedicated Bot**: Scoped specifically to `@YTSum49bot`.
+- **Command Control**: Manage your monitor list via `/add`, `/remove`, and `/status`.
+- **Security**: "Gatekeeper" logic ensures the bot only responds in the authorized channel.
+- **YAML Config**: All monitored channels are stored in `config/channels.yaml`.
 
-1. **Environment**:
-   - Python 3.11+
-   - Create a virtual environment: `python -m venv venv`
-   - Install dependencies: `./venv/bin/pip install -r requirements.txt`
+## 🚀 Commands
+- `/help`: Shows the YouTube-specific help menu.
+- `/status`: Lists all currently monitored channels.
+- `/add <url>`: Adds a new YouTube channel to the monitor list.
+- `/remove`: Opens an interactive menu to delete a channel.
+- `/fetch`: Manually triggers a scan for new videos.
 
-2. **Configuration**:
-   - Edit `config/channels.yaml` to add your target channels.
-   - Ensure environment variables are set (e.g., `GOOGLE_API_KEY` for Gemini, `TELEGRAM_TARGET`).
+## 📂 Project Structure
+- `src/main.py`: The entry point and Telegram command handler.
+- `src/delivery.py`: Logic for managing the channel list and interactive menus.
+- `config/channels.yaml`: The data store for your monitored URLs.
+- `.env`: (Local Only) Contains private API keys and IDs.
 
-3. **Running**:
-   - Run manually: `./venv/bin/python src/main.py`
-   - Or install as a systemd service (see `config/youtube-monitor.service`).
-
-## Automation
-
-The project includes a systemd user service template for daily monitoring.
+## 🔄 Workflow
+1. Update code on GitHub.
+2. On Raspberry Pi: `git fetch origin && git reset --hard origin/master`.
+3. Restart: `python3 src/main.py`.
