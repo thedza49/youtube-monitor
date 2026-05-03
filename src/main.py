@@ -1,41 +1,55 @@
 import os
-import time
+import logging
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from delivery import DeliveryManager
 from dotenv import load_dotenv
-from fetcher import VideoFetcher
-from summarizer import VideoSummarizer
-from delivery import TelegramDelivery
 
+# Load environment variables (Bot Token, etc.)
 load_dotenv()
 
-def main():
-    # Initialize the parts of the project
-    fetcher = VideoFetcher()
-    summarizer = VideoSummarizer()
-    delivery = TelegramDelivery()
+# Setup logging so we can see what's happening in the terminal
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+delivery = DeliveryManager()
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Sends a welcome message."""
+    await update.message.reply_text("YouTube Monitor Active. Use /fetch to scan or /remove to manage channels.")
+
+async def remove_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Triggered by /remove - shows the button menu."""
+    reply_markup = await delivery.get_remove_menu()
+    if reply_markup:
+        await update.message.reply_text("Select a channel to remove:", reply_markup=reply_markup)
+    else:
+        await update.message.reply_text("No channels found in your list.")
+
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Triggered when you tap a button."""
+    query = update.callback_query
+    await query.answer() # Stops the loading spinner on Telegram
     
-    print("Starting YouTube Monitor...")
+    # Check if the button click starts with 'remove_'
+    if query.data.startswith("remove_"):
+        index = int(query.data.split("_")[1])
+        removed_name = delivery.remove_channel_by_index(index)
+        await query.edit_message_text(text=f"Successfully removed: {removed_name}")
 
-    while True:
-        try:
-            # 1. Fetch new videos
-            new_videos = fetcher.get_new_videos()
-            
-            for video in new_videos:
-                print(f"Processing: {video['title']}")
-                
-                # 2. Get the summary from your Oracle Cloud
-                summary = summarizer.summarize(video['transcript'])
-                
-                # 3. Send to Telegram
-                message = f"<b>{video['title']}</b>\n\n{summary}\n\n<a href='{video['url']}'>Watch Video</a>"
-                delivery.send_message(message)
-                
-            # Wait 30 minutes before checking again
-            time.sleep(1800)
-            
-        except Exception as e:
-            print(f"Loop error: {e}")
-            time.sleep(60)
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    if not token:
+        print("Error: TELEGRAM_BOT_TOKEN not found in .env file.")
+    else:
+        # Build the application
+        application = ApplicationBuilder().token(token).build()
+        
+        # Register the commands
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(CommandHandler("remove", remove_command))
+        
+        # Register the button click handler
+        application.add_handler(CallbackQueryHandler(handle_callback))
+        
+        print("Bot is listening for commands...")
+        application.run_polling()
