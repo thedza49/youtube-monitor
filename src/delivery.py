@@ -1,23 +1,29 @@
-ects/youtube-monitor $ 
-(venv) daniel@raspberrypi:~/projects/youtube-monitor $ 
-(venv) daniel@raspberrypi:~/projects/youtube-monitor $ 
-(venv) daniel@raspberrypi:~/projects/youtube-monitor $ 
-(venv) daniel@raspberrypi:~/projects/youtube-monitor $ git fetch origin
-git reset --hard origin/master
-remote: Enumerating objects: 7, done.
-remote: Counting objects: 100% (7/7), done.
-remote: Compressing objects: 100% (4/4), done.
-remote: Total 4 (delta 2), reused 0 (delta 0), pack-reused 0 (from 0)
-Unpacking objects: 100% (4/4), 1.14 KiB | 390.00 KiB/s, done.
-From https://github.com/thedza49/youtube-monitor
-   70c9491..4d192f9  master     -> origin/master
-HEAD is now at 4d192f9 Update fetcher.py
-(venv) daniel@raspberrypi:~/projects/youtube-monitor $ 
-(venv) daniel@raspberrypi:~/projects/youtube-monitor $ 
-(venv) daniel@raspberrypi:~/projects/youtube-monitor $ python3 src/main.py
-Traceback (most recent call last):
-  File "/home/daniel/projects/youtube-monitor/src/main.py", line 6, in <module>
-    from delivery import TelegramDelivery
-ImportError: cannot import name 'TelegramDelivery' from 'delivery' (/home/daniel/projects/youtube-monitor/src/delivery.py)
-(venv) daniel@raspberrypi:~/projects/youtube-monitor $ 
-(venv) daniel@raspberrypi:~/projects/youtube-monitor $ 
+import requests
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class TelegramDelivery:
+    def __init__(self):
+        self.token = os.getenv("TELEGRAM_BOT_TOKEN")
+        self.chat_id = os.getenv("TELEGRAM_CHAT_ID")
+
+    def send_message(self, text):
+        if not self.token or not self.chat_id:
+            print("Telegram credentials missing in .env")
+            return
+            
+        url = f"https://api.telegram.org/bot{self.token}/sendMessage"
+        payload = {
+            "chat_id": self.chat_id,
+            "text": text,
+            "parse_mode": "HTML"
+        }
+        
+        try:
+            response = requests.post(url, json=payload)
+            response.raise_for_status()
+            print("Message sent to Telegram!")
+        except Exception as e:
+            print(f"Failed to send Telegram message: {e}")
