@@ -9,7 +9,6 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Callb
 from delivery import DeliveryManager
 from poller import YouTubePoller
 from summarizer import VideoSummarizer
-from pdf_gen import PDFGenerator
 
 # Setup
 load_dotenv()
@@ -54,7 +53,6 @@ async def run_pipeline(bot):
     poller.save_seen_videos(seen)
 
     summarizer = VideoSummarizer()
-    pdf_gen = PDFGenerator()
 
     for video in new_videos:
         video_id = video['id']
@@ -78,30 +76,10 @@ async def run_pipeline(bot):
             logger.error(f"Summarizer error for {video_id}: {e}")
             summary_md = f"Summarization failed: {e}"
 
-        full_md = (
-            f"# {title}\n\n"
-            f"## Video Details\n"
-            f"- **Channel:** {channel_name}\n"
-            f"- **Link:** {link}\n"
-            f"- **Video ID:** {video_id}\n\n"
-            f"## Summary\n\n{summary_md}"
-        )
-
-        pdf_path = os.path.join(SUMMARIES_DIR, f"{video_id}_summary.pdf")
-        try:
-            pdf_gen.generate(full_md, pdf_path)
-            with open(pdf_path, 'rb') as f:
-                await bot.send_document(
-                    chat_id=AUTHORIZED_CHAT_ID,
-                    document=f,
-                    filename=f"{title[:50]}.pdf",
-                    caption=f"{title}\n{link}"
-                )
-        except Exception as e:
-            logger.error(f"PDF/send error for {video_id}: {e}")
-            await bot.send_message(
+        await bot.send_message(
                 chat_id=AUTHORIZED_CHAT_ID,
-                text=f"{title}\n{link}\n\n{summary_md[:3000]}"
+                text=f"*{title}*\n{link}\n\n{summary_md[:3000]}",
+                parse_mode="Markdown"
             )
 
     await bot.send_message(chat_id=AUTHORIZED_CHAT_ID, text=f"Done! Processed {len(new_videos)} video(s).")
