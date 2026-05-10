@@ -1,8 +1,6 @@
 feedparser
 youtube-transcript-api
 pyyaml
-google-generativeai
-weasyprint
-markdown
+fpdf2
 python-dotenv
 python-telegram-bot
