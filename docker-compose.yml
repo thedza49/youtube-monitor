@@ -7,4 +7,4 @@ services:
       - .env
     volumes:
       - ./config:/app/config
-      - ./processed_videos.txt:/app/processed_videos.txt
+      - ./data:/app/data

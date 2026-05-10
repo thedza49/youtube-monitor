@@ -1,31 +1,55 @@
 import requests
 import os
 from dotenv import load_dotenv
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
 
 load_dotenv()
 
 class VideoSummarizer:
     def __init__(self):
-        # This looks at your Pi's .env file for the Oracle IP
         base_url = os.getenv("OLLAMA_BASE_URL", "http://129.146.37.17:11434")
         self.url = f"{base_url}/api/generate"
-        self.model = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:3b")
+        self.model = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 
-    def summarize(self, text):
-        if not text:
-            return "No transcript available."
-            
-        prompt = f"Summarize this YouTube transcript into a clear, bulleted list:\n\n{text}"
-        payload = {
-            "model": self.model,
-            "prompt": prompt,
-            "stream": False
-        }
-        
+    def get_transcript(self, video_id):
         try:
-            # We give it 120 seconds because LLMs take a moment to 'think'
-            response = requests.post(self.url, json=payload, timeout=120)
-            response.raise_for_status()
-            return response.json().get('response', 'Summary failed.')
+            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+            return " ".join([entry["text"] for entry in transcript_list])
+        except (TranscriptsDisabled, NoTranscriptFound):
+            return None
         except Exception as e:
-            return f"Error connecting to Oracle/Ollama: {str(e)}"
+            print(f"Transcript error for {video_id}: {e}")
+            return None
+
+    def summarize(self, video_id, title, channel_name, link, summary_focus):
+        transcript = self.get_transcript(video_id)
+        if transcript:
+            transcript_text = transcript[:8000]
+            prompt = (
+                f"You are summarizing a YouTube video for a busy professional.\n\n"
+                f"Channel: {channel_name}\n"
+                f"Title: {title}\n"
+                f"Focus: {summary_focus}\n\n"
+                f"Transcript:\n{transcript_text}\n\n"
+                f"Write a structured summary with:\n"
+                f"## Narrative Summary\n(2-3 sentences)\n\n"
+                f"## Key Points\n(bullet list)\n\n"
+                f"## Actionable Takeaways\n(bullet list focused on: {summary_focus})"
+            )
+        else:
+            prompt = (
+                f"You are summarizing a YouTube video for a busy professional.\n\n"
+                f"Channel: {channel_name}\n"
+                f"Title: {title}\n"
+                f"Focus: {summary_focus}\n\n"
+                f"No transcript was available. Based on the title alone, write a brief note "
+                f"explaining what this video likely covers and why it may be relevant. "
+                f"Clearly label this as title-only inference."
+            )
+        payload = {"model": self.model, "prompt": prompt, "stream": False}
+        try:
+            response = requests.post(self.url, json=payload, timeout=180)
+            response.raise_for_status()
+            return response.json().get("response", "Summary failed.")
+        except Exception as e:
+            return f"Error connecting to Ollama: {str(e)}"
