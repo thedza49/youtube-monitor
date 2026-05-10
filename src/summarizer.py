@@ -1,7 +1,7 @@
 import requests
 import os
 from dotenv import load_dotenv
-from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
+from youtube_transcript_api import YouTubeTranscriptApi
 
 load_dotenv()
 
@@ -13,12 +13,11 @@ class VideoSummarizer:
 
     def get_transcript(self, video_id):
         try:
-            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
-            return " ".join([entry["text"] for entry in transcript_list])
-        except (TranscriptsDisabled, NoTranscriptFound):
-            return None
+            api = YouTubeTranscriptApi()
+            transcript = api.fetch(video_id)
+            return " ".join([entry.text for entry in transcript])
         except Exception as e:
-            print(f"Transcript error for {video_id}: {e}")
+            print(f"Transcript error for {video_id}: {type(e).__name__}: {e}")
             return None
 
     def summarize(self, video_id, title, channel_name, link, summary_focus):
