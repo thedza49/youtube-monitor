@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 delivery = DeliveryManager()
 AUTHORIZED_CHAT_ID = os.getenv("TELEGRAM_CHANNEL_ID")
+THREAD_ID = int(os.getenv("TELEGRAM_THREAD_ID", 0)) or None
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(BASE_DIR, "config", "channels.yaml")
@@ -38,15 +39,15 @@ async def run_pipeline(bot):
         new_videos = poller.poll()
     except Exception as e:
         logger.error(f"Poller error: {e}")
-        await bot.send_message(chat_id=AUTHORIZED_CHAT_ID, text=f"Error scanning channels: {e}")
+        await bot.send_message(chat_id=AUTHORIZED_CHAT_ID, message_thread_id=THREAD_ID, text=f"Error scanning channels: {e}")
         return
 
     if not new_videos:
         logger.info("No new videos found")
-        await bot.send_message(chat_id=AUTHORIZED_CHAT_ID, text="No new videos found.")
+        await bot.send_message(chat_id=AUTHORIZED_CHAT_ID, message_thread_id=THREAD_ID, text="No new videos found.")
         return
 
-    await bot.send_message(chat_id=AUTHORIZED_CHAT_ID, text=f"Found {len(new_videos)} new video(s). Summarizing...")
+    await bot.send_message(chat_id=AUTHORIZED_CHAT_ID, message_thread_id=THREAD_ID, text=f"Found {len(new_videos)} new video(s). Summarizing...")
 
     # Mark as seen before processing to avoid duplicates on reruns
     seen = poller.seen_videos + [v['id'] for v in new_videos]
@@ -82,7 +83,7 @@ async def run_pipeline(bot):
                 parse_mode="Markdown"
             )
 
-    await bot.send_message(chat_id=AUTHORIZED_CHAT_ID, text=f"Done! Processed {len(new_videos)} video(s).")
+    await bot.send_message(chat_id=AUTHORIZED_CHAT_ID, message_thread_id=THREAD_ID, text=f"Done! Processed {len(new_videos)} video(s).")
 
 
 async def scheduled_fetch(context):
