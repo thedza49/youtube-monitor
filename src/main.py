@@ -179,3 +179,11 @@ if __name__ == '__main__':
 
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("start", help_command))
+    application.add_handler(CommandHandler("status", status_command))
+    application.add_handler(CommandHandler("add", add_command))
+    application.add_handler(CommandHandler("remove", remove_command))
+    application.add_handler(CommandHandler("fetch", fetch_command))
+    application.add_handler(CallbackQueryHandler(handle_callback))
+
+    print(f"Bot started. Authorized ID: {AUTHORIZED_CHAT_ID}")
+    application.run_polling()
