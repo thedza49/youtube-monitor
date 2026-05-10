@@ -1,6 +1,5 @@
 feedparser
 youtube-transcript-api
 pyyaml
-fpdf2
 python-dotenv
-python-telegram-bot
+python-telegram-bot[job-queue]
