@@ -79,6 +79,7 @@ async def run_pipeline(bot):
 
         await bot.send_message(
                 chat_id=AUTHORIZED_CHAT_ID,
+                message_thread_id=THREAD_ID,
                 text=f"*{title}*\n{link}\n\n{summary_md[:3000]}",
                 parse_mode="Markdown"
             )
