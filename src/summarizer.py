@@ -47,7 +47,7 @@ class VideoSummarizer:
             )
         payload = {"model": self.model, "prompt": prompt, "stream": False}
         try:
-            response = requests.post(self.url, json=payload, timeout=180)
+            response = requests.post(self.url, json=payload, timeout=600)
             response.raise_for_status()
             return response.json().get("response", "Summary failed.")
         except Exception as e:

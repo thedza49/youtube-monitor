@@ -54,6 +54,10 @@ class YouTubePoller:
                     if 'link' in entry:
                         video_id = entry.link.split('v=')[-1]
                 
+                # Skip YouTube Shorts
+                if '/shorts/' in entry.get('link', ''):
+                    continue
+
                 if not video_id or video_id in self.seen_videos:
                     continue
                 
