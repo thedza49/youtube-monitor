@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler, Application
+from telegraph import Telegraph
 from delivery import DeliveryManager
 from poller import YouTubePoller
 from summarizer import VideoSummarizer
@@ -18,6 +19,23 @@ logger = logging.getLogger(__name__)
 delivery = DeliveryManager()
 AUTHORIZED_CHAT_ID = os.getenv("TELEGRAM_CHANNEL_ID")
 THREAD_ID = int(os.getenv("TELEGRAM_THREAD_ID", 0)) or None
+TELEGRAPH_TOKEN = os.getenv("TELEGRAPH_TOKEN")
+
+def post_to_telegraph(title, channel_name, link, summary_md):
+    """Post summary to Telegraph and return the URL."""
+    try:
+        t = Telegraph(access_token=TELEGRAPH_TOKEN)
+        html = summary_md.replace("\n", "<br>")
+        html = f"<p><b>Channel:</b> {channel_name}</p><p><b>Video:</b> <a href=\"{link}\">{link}</a></p><br>{html}"
+        response = t.create_page(
+            title=title[:256],
+            html_content=html,
+            author_name="YT Summarizer"
+        )
+        return f"https://telegra.ph/{response['path']}"
+    except Exception as e:
+        logger.error(f"Telegraph error: {e}")
+        return None
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(BASE_DIR, "config", "channels.yaml")
@@ -97,11 +115,17 @@ async def run_pipeline(bot):
             summary_md = f"Summarization failed: {e}"
 
         save_to_obsidian(title, channel_name, link, video_id, summary_md)
+        telegraph_url = post_to_telegraph(title, channel_name, link, summary_md)
+        if telegraph_url:
+            msg = f"📺 *{channel_name}*\n{title}\n\n🔗 [YouTube]({link})\n📄 [Full Summary]({telegraph_url})"
+        else:
+            msg = f"📺 *{channel_name}*\n{title}\n\n🔗 {link}\n\n{summary_md[:3000]}"
         await bot.send_message(
                 chat_id=AUTHORIZED_CHAT_ID,
                 message_thread_id=THREAD_ID,
-                text=f"*{title}*\n{link}\n\n{summary_md[:3000]}",
-                parse_mode="Markdown"
+                text=msg,
+                parse_mode="Markdown",
+                disable_web_page_preview=False
             )
 
     await bot.send_message(chat_id=AUTHORIZED_CHAT_ID, message_thread_id=THREAD_ID, text=f"Done! Processed {len(new_videos)} video(s).")

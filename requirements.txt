@@ -3,3 +3,4 @@ youtube-transcript-api
 pyyaml
 python-dotenv
 python-telegram-bot[job-queue]
+telegraph
