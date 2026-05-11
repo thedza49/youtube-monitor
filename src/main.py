@@ -1,7 +1,7 @@
 import os
 import logging
 import asyncio
-from datetime import time
+from datetime import time, datetime
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from telegram import Update
@@ -22,8 +22,36 @@ THREAD_ID = int(os.getenv("TELEGRAM_THREAD_ID", 0)) or None
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.path.join(BASE_DIR, "config", "channels.yaml")
 SEEN_VIDEOS_PATH = os.path.join(BASE_DIR, "data", "seen_videos.json")
-SUMMARIES_DIR = os.path.join(BASE_DIR, "data", "summaries")
 
+
+OBSIDIAN_PODCASTS_DIR = "/app/obsidian/podcasts"
+
+def save_to_obsidian(title, channel_name, link, video_id, summary_md):
+    """Save summary as a markdown file in Obsidian podcasts folder."""
+    try:
+        os.makedirs(OBSIDIAN_PODCASTS_DIR, exist_ok=True)
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        safe_title = "".join(c if c.isalnum() or c in " -_" else "" for c in title)[:60].strip()
+        filename = f"{date_str}_{safe_title}.md"
+        filepath = os.path.join(OBSIDIAN_PODCASTS_DIR, filename)
+        md_content = f"""# {title}
+
+**Channel:** {channel_name}
+**Link:** {link}
+**Video ID:** {video_id}
+**Date:** {date_str}
+
+---
+
+{summary_md}
+"""
+        with open(filepath, "w") as f:
+            f.write(md_content)
+        logger.info(f"Saved to Obsidian: {filename}")
+        return filename
+    except Exception as e:
+        logger.error(f"Failed to save to Obsidian: {e}")
+        return None
 
 def is_authorized(update: Update) -> bool:
     return str(update.effective_chat.id) == AUTHORIZED_CHAT_ID
@@ -32,8 +60,6 @@ def is_authorized(update: Update) -> bool:
 async def run_pipeline(bot):
     """Core logic: poll, summarize, send. Used by both /fetch and the scheduler."""
     logger.info("Pipeline started")
-    os.makedirs(SUMMARIES_DIR, exist_ok=True)
-
     try:
         poller = YouTubePoller(CONFIG_PATH, SEEN_VIDEOS_PATH)
         new_videos = poller.poll()
@@ -64,19 +90,13 @@ async def run_pipeline(bot):
 
         logger.info(f"Summarizing: {title}")
 
-        prompt_text = (
-            f"Channel: {channel_name}\n"
-            f"Title: {title}\n"
-            f"URL: {link}\n"
-            f"Summary focus: {summary_focus}"
-        )
-
         try:
             summary_md = summarizer.summarize(video_id, title, channel_name, link, summary_focus)
         except Exception as e:
             logger.error(f"Summarizer error for {video_id}: {e}")
             summary_md = f"Summarization failed: {e}"
 
+        save_to_obsidian(title, channel_name, link, video_id, summary_md)
         await bot.send_message(
                 chat_id=AUTHORIZED_CHAT_ID,
                 message_thread_id=THREAD_ID,
