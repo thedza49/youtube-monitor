@@ -23,13 +23,12 @@ class VideoSummarizer:
     def summarize(self, video_id, title, channel_name, link, summary_focus):
         transcript = self.get_transcript(video_id)
         if transcript:
-            transcript_text = transcript[:8000]
             prompt = (
                 f"You are summarizing a YouTube video for a busy professional.\n\n"
                 f"Channel: {channel_name}\n"
                 f"Title: {title}\n"
                 f"Focus: {summary_focus}\n\n"
-                f"Transcript:\n{transcript_text}\n\n"
+                f"Transcript:\n{transcript}\n\n"
                 f"Write a structured summary with:\n"
                 f"## Narrative Summary\n(2-3 sentences)\n\n"
                 f"## Key Points\n(bullet list)\n\n"
@@ -45,9 +44,9 @@ class VideoSummarizer:
                 f"explaining what this video likely covers and why it may be relevant. "
                 f"Clearly label this as title-only inference."
             )
-        payload = {"model": self.model, "prompt": prompt, "stream": False}
+        payload = {"model": self.model, "prompt": prompt, "stream": False, "options": {"num_ctx": 32768}}
         try:
-            response = requests.post(self.url, json=payload, timeout=600)
+            response = requests.post(self.url, json=payload, timeout=None)
             response.raise_for_status()
             return response.json().get("response", "Summary failed.")
         except Exception as e:
